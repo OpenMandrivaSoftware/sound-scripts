@@ -38,17 +38,10 @@ clean:
 cleandist:
 	rm -rf $(PACKAGE)-$(VERSION) $(PACKAGE)-$(VERSION).tar.xz
 
-localcopy:
-	svn export -q -rBASE . $(PACKAGE)-$(VERSION)
-	find $(PACKAGE)-$(VERSION) -name '*.pl' | xargs perl -pi -e 's/\s*use\s+(diagnostics|vars|strict).*//g'
-
-tar:
-	tar cvfJ $(PACKAGE)-$(VERSION).tar.xz $(PACKAGE)-$(VERSION)
-	rm -rf $(PACKAGE)-$(VERSION)
-
 # rules to build a distributable rpm
 
-dist: cleandist localcopy tar
+dist:
+	git archive --prefix=$(PACKAGE)-$(VERSION)/ HEAD | xz -cv -T0 > $(PACKAGE)-$(VERSION).tar.xz;
 
 export:
 
