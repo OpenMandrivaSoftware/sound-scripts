@@ -1,0 +1,1 @@
+install snd /sbin/modprobe --ignore-install snd && { /sbin/modprobe --all snd_pcm_oss snd_seq_oss || :; }

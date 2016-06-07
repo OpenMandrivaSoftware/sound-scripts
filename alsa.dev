@@ -1,0 +1,28 @@
+#!/bin/sh -e
+
+# Restore ALSA mixer.
+#
+# If it failed (eg: some mixer elements have changed due to hw switch
+# or driver update), then reset them to sane values:
+
+ALSACTL=/sbin/alsactl
+
+function restore ()
+{
+    $ALSACTL restore >/dev/null 2>&1 || /usr/bin/reset_sound >/dev/null 2>&1
+}
+
+if [[ -n "$FORCE" ]]; then
+    restore
+    exit
+fi
+if [[ "$ACTION" == "add" ]]; then
+    [[ "$DEVPATH" != /class/sound/controlC* ]] && exit
+    count=$[ $(egrep '^alias sound-slot-' /etc/modprobe.conf|wc -l) -1 ]
+    [[ "$DEVPATH" = "/class/sound/controlC$count" ]] && restore
+elif [[ "$ACTION" == "remove" ]]; then # this is not called anymore (but on force-reload)
+    # prevent sound volume reset on udev restart:
+    #[[ $DEVPATH != /class/sound/mixer ]] && exit
+    [[ "$DEVPATH" != /class/sound/controlC* ]] && exit
+    $ALSACTL store
+fi

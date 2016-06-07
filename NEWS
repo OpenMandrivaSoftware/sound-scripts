@@ -1,0 +1,65 @@
+Version 0.62 -  6 January 2012, Per Øyvind Karlsen
+
+- add '.conf' suffix to modprobe conf files
+- change path to asound.state file. (#64134, Alexander Barakin)
+
+Version 0.61 - 25 May 2011, Eugeni Dodonov
+
+- prevent hang on shutdown/reboot caused by fuser being too greedy
+- systemd integration
+
+Version 0.60 - 10 February 2010, Frederik Himpe
+
+- sound service:
+  o use a secure file in default tmp directory (#55929) (Thierry
+    Vignaud)
+- alsa_default.pl:
+  o kernel 2.6.33 renamed 'PC Beep' into 'Beep' (#57320); support both
+    (Andrey Borzenkov)
+
+Version 0.59 - 3 October 2009, Frederic Crozat
+
+- alsa service:
+   o do not save alsa levels at shutdown, done in halt now
+
+Version 0.58 -  7 April 2009, Thierry Vignaud
+
+- alsa_default.pl:
+  o reduce level of speaker to 20% (#49045)
+
+Version 0.57 -  1 March 2009, Frederik Himpe
+
+- alsa_default.pl:
+  o mute Audigy Analog/Digital Output Jack by default (not a
+    straightforward issue, see comment) (Adam Williamson)
+  o disable PC Beep by default (#45386)
+
+Version 0.56 - 24 October 2008, Adam Williamson
+
+- alsa_default.pl: mute Analog Loopback by default (#44703)
+
+Version 0.55 - 22 September 2008, Frederic Crozat
+
+- alsa service
+  o do not block kernel logs while loading
+  o do not bother trying load non existing snd-detect module
+  o do not compute ALSA version
+
+Version 0.54 - 15 September 2008, Thierry Vignaud
+
+- adapt to latest udev (#43828)
+
+Version 0.53 - 4 April 2008, Thierry Vignaud
+
+- fix loading snd-usb-audio (#34613)
+
+Version 0.52 - 3 April 2008, Thierry Vignaud
+
+- alsa initscript:
+  o fix matching snd-usb-audio devices (#36466)
+
+Version 0.51 - 25 March 2008, Thierry Vignaud
+
+- alsa initscript:
+  o load snd-usb-audio for devices of "audio" Class and of subclass 3
+    too (#39376)

@@ -1,0 +1,130 @@
+# -*- Mode: sh -*-
+#
+# A set of common functions used by alsa-base scripts.
+#   Copyright (c) 2000. Masato Taruishi. All rights reserved.
+#   Copyright (c) 2001. MandrakeSoft. All rights reserved.
+#  This program is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation; either version 2 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program; if not, write to the Free Software
+#  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+
+
+get_alsa_version() {
+  if [ ! -d /proc/asound ]; then
+   if ! modprobe snd 2> /dev/null; then
+     if ! modprobe snd 2> /dev/null; then
+       alsa_version="none"
+       alsa_major_version="none"
+       return
+     fi
+   fi
+   load=1
+  fi
+  alsa_version=`cat /proc/asound/version | head -1 | cut -d' ' -f 7 | cut -d. -f -3`
+  alsa_major_version=`echo $alsa_version | cut -d. -f -2`
+  if [ "$load" = "1" ]; then
+    modprobe -r snd 2> /dev/null || true
+  fi
+}
+
+get_sound_devs() {
+  sound_devs_dev=`find /dev -type c 2> /dev/null | xargs ls -l 2> /dev/null | awk -F' ' '{print $5,$10;}' | awk '/^14,/ || /^116,/ {printf "%s\n", $2;}'|sort|uniq|tr '\n' ' '`
+}
+
+get_sound_devs_proc() {
+  sound_devs_dev_proc=`find /proc/asound/dev -type c 2> /dev/null | xargs ls -l 2> /dev/null | awk -F' ' '{print $5,$10;}' | awk '/^14,/ || /^116,/ {printf "%s\n", $2;}'|sort|uniq|tr '\n' ' '`
+}
+
+get_procs_using_sound_devs() {
+  procs_using_sound_devs=`fuser $(find /dev/snd/ -type f) 2>/dev/null |sed -e 's!.*(\d+)$!$2!'`
+}
+
+kill_procs_using_sound_devs() {
+  get_procs_using_sound_devs
+  if [ -n "$procs_using_sound_devs" ]; then  # There are procs to kill
+    sleep 1     # Wait a sec: they might release the device
+    get_procs_using_sound_devs
+    if [ -n "$procs_using_sound_devs" ]; then  # There are still procs to kill
+      echo -n "but first, terminating (SIGTERM) pid ${procs_using_sound_devs}"
+      kill -TERM $procs_using_sound_devs >> /dev/null
+      echo -n "."
+      sleep 1
+      echo -n "."
+      sleep 1
+      echo -n ". "
+      get_procs_using_sound_devs
+      if [ -n "$procs_using_sound_devs" ]; then  # There are still procs to kill
+        echo -n "and killing (SIGKILL) pid ${procs_using_sound_devs}... "
+        kill -KILL $procs_using_sound_devs >> /dev/null
+      fi
+    fi
+  fi
+}
+
+# kill -STOPing processes using sound devicces.
+stop_procs_using_sound_devs() {
+  get_procs_using_sound_devs
+  if [ -n "$procs_using_sound_devs" ] && [ ! -f /var/lib/alsa/alsa-suspend-list ]; then
+    procs_using_sound_devs=`ps --no-headers $procs_using_sound_devs | awk -F' ' '$3 ~ /[^T]/ { print $1;}'`
+    for proc in $procs_using_sound_devs
+    do
+      kill -STOP $proc >> /dev/null && echo -n " $proc" >> /var/lib/alsa/alsa-suspend-list
+    done
+    chmod 600 /var/lib/alsa/alsa-suspend-list
+  fi
+}
+
+# kill -CONTing processes using sound devicces.
+cont_procs_using_sound_devs() {
+  if [ -O /var/lib/alsa/alsa-suspend-list ]; then
+      for proc in `cat /var/lib/alsa/alsa-suspend-list`
+      do
+        kill -CONT $proc >> /dev/null || true
+      done
+  fi
+  rm -f /var/lib/alsa/alsa-suspend-list
+}
+
+disable_sound_devs() {
+  if [ -z "$ALSA_KEEP_DEV_PERMS" ]; then
+    for file in $sound_devs_dev; do
+      if [ -e $file ]; then
+        perm=`perl -e "printf \"%04o\", (stat(\"$file\"))[2] & 07777;"`
+        install -d /var/lib/alsa/`dirname $file`
+        test -e /var/lib/alsa/$file || echo $perm > /var/lib/alsa/$file
+        chmod 000 $file
+      fi
+    done
+  fi
+}
+
+enable_sound_devs() {
+  if [ -z "$ALSA_KEEP_DEV_PERMS" ]; then
+    for file in $sound_devs_dev; do
+      if [ -O /var/lib/alsa/$file ] && [ -e $file ]; then
+        perm=`cat /var/lib/alsa/$file`
+        rm /var/lib/alsa/$file
+        chmod $perm $file
+      fi
+    done
+  fi
+}
+
+disable_esd() {
+esduser=`ps -o %U --no-heading -C esd` || return 0
+  [ -n "$esduser" ] && (echo -n 'muting esd ... ' && su $esduser --command='esdctl standby standbymode') | logger -t $0
+}
+
+enable_esd() {
+esduser=`ps -o %U --no-heading -C esd` || return 0
+  [ -n "$esduser" ] && (echo -n 'unmuting esd ... ' && su $esduser --command='esdctl resume standbymode') | logger -t $0
+}

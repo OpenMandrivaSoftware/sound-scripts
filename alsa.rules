@@ -1,0 +1,2 @@
+KERNEL=="controlC[0-9]*", RUN+="/usr/sbin/alsa.agent"
+KERNEL=="mixer*", RUN+="/usr/sbin/alsa.agent"

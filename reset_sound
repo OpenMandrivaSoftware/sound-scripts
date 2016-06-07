@@ -1,0 +1,12 @@
+#!/bin/sh
+# Thierry Vignaud <tvignaud@mandrakesoft.com>
+# Copyright 2004 MandrakeSoft
+
+
+ALSACTL=/sbin/alsactl
+MIXER_SETTINGS=$TMPDIR/asound.state_tmp
+$ALSACTL -f $MIXER_SETTINGS store
+# set some sane default volume and unmute needed channels:
+/etc/rc.d/rc.alsa_default $MIXER_SETTINGS
+$ALSACTL -f $MIXER_SETTINGS restore -F
+rm -f $MIXER_SETTINGS
